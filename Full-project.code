@@ -1,23 +1,48 @@
-
-
 #include <LiquidCrystal.h>
-LiquidCrystal lcd_1(12, 11, 5, 4, 3, 2);
-int sensorPin = A0;
-float temperature;
 
-void setup()
-{
+const uint8_t sensorPin = A0;
+char lcdBuffer[7];
+
+LiquidCrystal lcd_1(12, 11, 5, 4, 3, 2);
+
+unsigned long lastReadTime = 0;
+const unsigned long READ_INTERVAL = 1000;
+const uint8_t NUM_SAMPLES = 10;
+
+void setup() {
   lcd_1.begin(16, 2);
   lcd_1.print("Temperature:");
+  analogReference(INTERNAL);
 }
 
-void loop()
-{
-  int reading = analogRead(sensorPin);
-  float voltage = reading * (5.0 / 1023.0);
-  temperature = voltage * 100; // LM35 scale
-  lcd_1.setCursor(0, 1);
-  lcd_1.print(temperature);
-  lcd_1.print(" C "); // spaces clear old digits
-  delay(1000);
+void loop() {
+  unsigned long now = millis();
+
+  if (now - lastReadTime >= READ_INTERVAL) {
+    lastReadTime = now;
+
+    long sum = 0;
+    for (uint8_t i = 0; i < NUM_SAMPLES; i++) {
+      sum += analogRead(sensorPin);
+      delayMicroseconds(100);
+    }
+    int avgReading = sum / NUM_SAMPLES;
+
+    if (avgReading < 5 || avgReading > 1018) {
+      lcd_1.setCursor(0, 1);
+      lcd_1.print("Sensor Error   ");
+      return;
+    }
+
+    int tempX10 = (long)avgReading * 1100L / 1023L / 10L;
+    int rounded = ((tempX10 + 2) / 5) * 5;
+
+    int whole = rounded / 10;
+    int frac  = rounded % 10;
+
+    snprintf(lcdBuffer, sizeof(lcdBuffer), "%2d.%dC  ", whole, frac);
+
+    lcd_1.setCursor(0, 1);
+    lcd_1.print(lcdBuffer);
+  }
 }
