@@ -34,7 +34,7 @@ void loop() {
       return;
     }
 
-    int tempX10 = (long)avgReading * 1100L / 1023L / 10L;
+    int tempX10 = (long)avgReading * 1100L / 1023L ;
     int rounded = ((tempX10 + 2) / 5) * 5;
 
     int whole = rounded / 10;
